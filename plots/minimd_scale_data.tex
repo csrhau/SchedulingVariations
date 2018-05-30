@@ -1,0 +1,171 @@
+\documentclass[tikz]{standalone}
+
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\pgfplotsset{compat=newest}
+
+\definecolor{printred}{RGB}{215,25,28}
+\definecolor{printorange}{RGB}{253,174,97}
+\definecolor{printyellow}{RGB}{255,255,191}
+\definecolor{printgreen}{RGB}{145,180,130}
+\definecolor{printblue}{RGB}{43,131,186}
+\definecolor{printlilac}{RGB}{178,171,210}
+
+\pgfplotsset{
+    legend image with text/.style={
+        legend image code/.code={%
+            \node[anchor=center] at (0.3cm,0cm) {#1};
+        }
+    },
+}
+\newcommand{\legendline}[1]{%
+  \raisebox{2pt}{\tikz{\draw[#1](0,0) -- (4.5mm,0);}}%
+}
+
+\begin{document}
+  % Read In PState Data factors
+  \pgfplotstableread[col sep=comma]{
+    Nodes,Runtime,Node Power,C Time,E Time
+    1,146.91,241.12,139.778,154.406
+    2,138.00,228.93,133.591,142.555
+    4,123.33,223.51,120.347,126.387
+    6,115.33,218.33,113.423,117.269
+    8,109.00,212.37,108.192,109.814
+  }\minimdscaledatatable
+  % ./pose.py -tt 146.91 -pt 241.12 -pr 345.33 -pb 207.68 -b 1
+  % ./pose.py -tt 138.00 -pt 228.93 -pr 345.33 -pb 207.68 -b 2
+  % ./pose.py -tt 123.33 -pt 223.51 -pr 345.33 -pb 207.68 -b 4
+  % ./pose.py -tt 115.33 -pt 218.33 -pr 345.33 -pb 207.68 -b 6
+  % ./pose.py -tt 109.00 -pt 212.37 -pr 345.33 -pb 207.68 -b 8
+
+  \begin{tikzpicture}
+    \tikzset{ every pin edge/.append style={thick} }
+    \begin{axis}[
+      axis on top,
+      axis x line=bottom,
+      axis y line=left,
+      xlabel={Runtime (\emph{s})},
+      ylabel={Energy (\emph{J})},
+      xmin=90, xmax=160,
+      ymin=10000, ymax=210000,
+      legend columns=3,
+      legend to name=minimd_scale_data:legend,
+      legend style={/tikz/every even column/.append style={column sep=0.2cm}} % space out columns a bit
+      ]
+
+      % arguments: code power, code time, x, n
+      \pgfmathdeclarefunction{metricbound}{4}{%
+        \pgfmathparse{((#1 * #2^(#4 + 1)) / #3^#4)}%
+      }
+      \pgfmathdeclarefunction{definitionbound}{4}{%
+        \pgfmathparse{((#1 / #2^(#4 + 1)) * #3^(#4 + 2))}%
+      }
+
+
+     \pgfmathsetmacro{\baselinepower}{207.68}
+
+     % Nodes = 1 POSE
+     \pgfplotstablegetelem{0}{Runtime}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{0}{Node Power}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codepower}{\pgfplotsretval}
+     \pgfplotstablegetelem{0}{Nodes}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codenodes}{\pgfplotsretval}
+     \pgfplotstablegetelem{0}{C Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\cnodetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{0}{E Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\enodetime}{\pgfplotsretval}
+     \addplot[gray, domain=\cnodetime:\codetime, forget plot] {definitionbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, densely dashed, domain=\pgfkeysvalueof{/pgfplots/xmin}:\codetime, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, domain=\codetime:\enodetime, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, densely dashed, domain=\enodetime:\pgfkeysvalueof{/pgfplots/xmax}, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[color=printgreen, very thick, domain=\cnodetime:\enodetime, forget plot] {\baselinepower * \codenodes * x};
+
+     % Nodes = 2 POSE
+     \pgfplotstablegetelem{1}{Runtime}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{1}{Node Power}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codepower}{\pgfplotsretval}
+     \pgfplotstablegetelem{1}{Nodes}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codenodes}{\pgfplotsretval}
+     \pgfplotstablegetelem{1}{C Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\cnodetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{1}{E Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\enodetime}{\pgfplotsretval}
+     \pgfmathsetmacro{\enodetime}{\pgfplotsretval}
+     \addplot[gray, domain=\cnodetime:\codetime, forget plot] {definitionbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, densely dashed, domain=\pgfkeysvalueof{/pgfplots/xmin}:\codetime, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, domain=\codetime:\enodetime, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, densely dashed, domain=\enodetime:\pgfkeysvalueof{/pgfplots/xmax}, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[color=printgreen, very thick, domain=\cnodetime:\enodetime, forget plot] {\baselinepower * \codenodes * x};
+
+     % Nodes = 4 POSE
+     \pgfplotstablegetelem{2}{Runtime}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{2}{Node Power}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codepower}{\pgfplotsretval}
+     \pgfplotstablegetelem{2}{Nodes}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codenodes}{\pgfplotsretval}
+     \pgfplotstablegetelem{2}{C Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\cnodetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{2}{E Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\enodetime}{\pgfplotsretval}
+     \pgfmathsetmacro{\enodetime}{\pgfplotsretval}
+     \addplot[gray, domain=\cnodetime:\codetime, forget plot] {definitionbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, densely dashed, domain=\pgfkeysvalueof{/pgfplots/xmin}:\codetime, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, domain=\codetime:\enodetime, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, densely dashed, domain=\enodetime:\pgfkeysvalueof{/pgfplots/xmax}, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[color=printgreen, very thick, domain=\cnodetime:\enodetime, forget plot] {\baselinepower * \codenodes * x};
+
+     % Nodes = 6 POSE
+     \pgfplotstablegetelem{3}{Runtime}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{3}{Node Power}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codepower}{\pgfplotsretval}
+     \pgfplotstablegetelem{3}{Nodes}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codenodes}{\pgfplotsretval}
+     \pgfplotstablegetelem{3}{C Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\cnodetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{3}{E Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\enodetime}{\pgfplotsretval}
+     \pgfmathsetmacro{\enodetime}{\pgfplotsretval}
+     \addplot[gray, domain=\cnodetime:\codetime, forget plot] {definitionbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, densely dashed, domain=\pgfkeysvalueof{/pgfplots/xmin}:\codetime, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, domain=\codetime:\enodetime, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, densely dashed, domain=\enodetime:\pgfkeysvalueof{/pgfplots/xmax}, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[color=printgreen, very thick, domain=\cnodetime:\enodetime, forget plot] {\baselinepower * \codenodes * x};
+
+     % Nodes = 8 POSE
+     \pgfplotstablegetelem{4}{Runtime}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{4}{Node Power}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codepower}{\pgfplotsretval}
+     \pgfplotstablegetelem{4}{Nodes}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codenodes}{\pgfplotsretval}
+     \pgfplotstablegetelem{4}{C Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\cnodetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{4}{E Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\enodetime}{\pgfplotsretval}
+     \pgfmathsetmacro{\enodetime}{\pgfplotsretval}
+     \addplot[gray, domain=\cnodetime:\codetime, forget plot] {definitionbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, densely dashed, domain=\pgfkeysvalueof{/pgfplots/xmin}:\codetime, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+     \addplot[gray, domain=\codetime:\enodetime, forget plot] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+
+      \addplot[mark=x, black, only marks] table [x=Runtime,y expr=\thisrow{Node Power} * \thisrow{Runtime} * \thisrow{Nodes}, trim cells=true] {\minimdscaledatatable}
+        node[pos=0, pin=above right:1]{}
+        node[pos=0.2, pin=above right:2]{}
+        node[pos=0.4, pin=above right:4]{}
+        node[pos=0.8, pin=above right:6]{}
+        node[pos=1, pin=above right:8 nodes]{}
+     ;
+     \addlegendentry{Code Measurements}
+
+
+     \addplot[gray, densely dashed, domain=\enodetime:\pgfkeysvalueof{/pgfplots/xmax}] {metricbound(\codepower * \codenodes, \codetime, x, 2)};
+      \addlegendentry{$E^1t^2$ Isolines}
+
+     \addplot[color=printgreen, very thick, domain=\cnodetime:\enodetime] {\baselinepower * \codenodes * x};
+      \addlegendentry{$P_{min}$ Energy Bounds}
+    \end{axis}
+  \end{tikzpicture}
+\end{document}

@@ -241,5 +241,5 @@ TSWLatexianTemp*
 # generated if using elsarticle.cls
 *.spl
 
-# Finished document
-document.pdf
+# PDFs in the top level directory
+/*.pdf
