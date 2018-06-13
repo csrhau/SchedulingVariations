@@ -1,0 +1,90 @@
+\documentclass[tikz]{standalone}
+
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\pgfplotsset{compat=newest}
+
+\definecolor{printred}{RGB}{215,25,28}
+\definecolor{printorange}{RGB}{253,174,97}
+\definecolor{printyellow}{RGB}{255,255,191}
+\definecolor{printgreen}{RGB}{145,180,130}
+\definecolor{printblue}{RGB}{43,131,186}
+\definecolor{printlilac}{RGB}{178,171,210}
+
+\pgfplotsset{
+    legend image with text/.style={
+        legend image code/.code={%
+            \node[anchor=center] at (0.3cm,0cm) {#1};
+        }
+    },
+}
+\newcommand{\legendline}[1]{%
+  \raisebox{2pt}{\tikz{\draw[#1](0,0) -- (4.5mm,0);}}%
+}
+
+\begin{document}
+  % Read In PState Data factors
+  \pgfplotstableread[col sep=comma]{
+    Nodes,Runtime,Node Power,C Time,E Time
+    1,146.91,241.12,139.778,154.406
+    2,138.00,228.93,133.591,142.555
+    4,123.33,223.51,120.347,126.387
+    6,115.33,218.33,113.423,117.269
+    8,109.00,212.37,108.192,109.814
+  }\minimdscaledatatable
+  % ./pose.py -tt 146.91 -pt 241.12 -pr 345.33 -pb 207.68 -b 1
+  % ./pose.py -tt 138.00 -pt 228.93 -pr 345.33 -pb 207.68 -b 2
+  % ./pose.py -tt 123.33 -pt 223.51 -pr 345.33 -pb 207.68 -b 4
+  % ./pose.py -tt 115.33 -pt 218.33 -pr 345.33 -pb 207.68 -b 6
+  % ./pose.py -tt 109.00 -pt 212.37 -pr 345.33 -pb 207.68 -b 8
+
+  \begin{tikzpicture}
+    \tikzset{ every pin edge/.append style={thick} }
+    \begin{axis}[
+      axis on top,
+      axis x line=bottom,
+      axis y line=left,
+      xlabel={Runtime (\emph{s})},
+      ylabel={Energy (\emph{J})},
+      xmin=100, xmax=160,
+      ymin=0, ymax=300000,
+      ]
+
+      \addplot[mark=x, black, only marks] table [x=Runtime,y expr=\thisrow{Node Power} * \thisrow{Runtime} * \thisrow{Nodes}, trim cells=true, forget plot] {\minimdscaledatatable}
+        node[pos=0, pin=above right:1]{}
+        node[pos=0.2, pin=above right:2]{}
+        node[pos=0.4, pin=above right:4]{}
+        node[pos=0.8, pin=above right:6]{}
+        node[pos=1, pin=above right:8 nodes]{}
+     ;
+
+      %% Metric Parameters %%
+      %% EDS %%
+      % arguments: code power, code time, x, beta
+      \pgfmathdeclarefunction{edsmetricbound}{4}{%
+        \pgfmathparse{ #1 * #2  + ( #4 ) * ( #2 - #3 )}%
+      }
+
+     % Nodes = 4 POSE
+     \pgfplotstablegetelem{2}{Runtime}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{2}{Node Power}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codepower}{\pgfplotsretval}
+     \pgfplotstablegetelem{2}{Nodes}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\codenodes}{\pgfplotsretval}
+     \pgfplotstablegetelem{2}{C Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\cnodetime}{\pgfplotsretval}
+     \pgfplotstablegetelem{2}{E Time}\of{\minimdscaledatatable}
+     \pgfmathsetmacro{\enodetime}{\pgfplotsretval}
+     \pgfmathsetmacro{\enodetime}{\pgfplotsretval}
+
+     \addplot[blue, densely dashed, domain=\pgfkeysvalueof{/pgfplots/xmin}:\pgfkeysvalueof{/pgfplots/xmax}] {edsmetricbound(700, 130, x, 6000)};
+     \addlegendentry{EDS with $\beta=6000$}
+
+     \addplot[red, densely dashed, domain=\pgfkeysvalueof{/pgfplots/xmin}:\pgfkeysvalueof{/pgfplots/xmax}] {edsmetricbound(700, 130, x, 600)};
+     \addlegendentry{EDS with $\beta=600$}
+
+
+    \end{axis}
+  \end{tikzpicture}
+\end{document}

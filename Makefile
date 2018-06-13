@@ -5,9 +5,9 @@ PLOT_TEX_FILES := $(wildcard $(PLOT_DIR)/*.tex)
 PLOT_FILENAMES := $(notdir $(PLOT_TEX_FILES))
 PLOT_PDF_FILES := $(PLOT_FILENAMES:%.tex=%.pdf)
 
-.PHONY: all 
+.PHONY: all
 .DEFAULT: all
-all: document.pdf 
+all: document.pdf
 
 .PHONY: plots
 plots: $(PLOT_PDF_FILES)
@@ -22,6 +22,6 @@ document.pdf: $(TEX_DIR)/document.tex $(PLOT_PDF_FILES) ALWAYS
 tidy:
 	rm -f document.bbl *.fls *.aux *.log *.bbl *.blg
 	rm -f *.fdb_latexmk *.lof *.lot *.out *.toc
-	
+
 clean: tidy
 	latexmk -CA $(TEX_DIR)/document.tex $(PLOT_TEX_FILES)
